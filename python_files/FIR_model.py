@@ -53,14 +53,16 @@ def CalcFIR_transposed(InputVec,Coefs,Order): #transposed form of fir filter
     output_ls.append(registers[-1])
   return output_ls
 
+
+
 OutVec=CalcFIR_transposed(InputVec,coefs_lsIQ,FIR.C_FirOrder)
-RefVec=sg.lfilter(coefs_ls,[1.0],InputVec)
+RefVec=sg.lfilter(coefs_ls,[1.0],InputVec) #* reference data
 
 
 #save data to .txt for vhdl testbench purposes
 file=open('../sim/DataVec.txt','w')
-# for i in range(C_TestValuesNum):
-  # file.write('{} {}'.format(str(InputVec[i]),str(OutVec[i]))+ '\n')
+for i in range(C_TestValuesNum):
+  file.write('{} {}'.format(str(InputVec[i]),str(OutVec[i]))+ '\n')
 
 plt.plot(RefVec)
 plt.plot(OutVec)
