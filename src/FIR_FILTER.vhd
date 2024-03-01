@@ -20,7 +20,7 @@ end entity;
 architecture FIR_FILTER_rtl of FIR_FILTER is
   constant C_TAPS : integer := 10;
   type t_Coefs is array(C_TAPS-1 downto 0) of unsigned(G_DATA_W-1 downto 0);
-  type t_Values is array(C_TAPS-1 downto 0) of unsigned(G_DATA_W-1 downto 0);
+  type t_Values is array(C_TAPS-1 downto 0) of unsigned(G_DATA_W-1+(C_TAPS-1) downto 0); -- prevent from overflow
   type t_Muls is array(C_TAPS-1 downto 0) of unsigned(2*G_DATA_W-1 downto 0);
   constant C_Coefs : t_Coefs := ( --IQ16
     0 => to_unsigned(1061,G_DATA_W),
@@ -43,9 +43,10 @@ begin
   if rising_edge(i_clk) then
     if (i_rst = '1') then
       Values <= (others => (others => '0'));
+      MulRes := (others => (others => '0'));
     else
       MulRes(0) := C_Coefs(0) * unsigned(iv_InSig);
-      Values(0) <=  MulRes(0)(2*G_DATA_W-1 downto G_DATA_W);
+      Values(0) <= resize(MulRes(0)(2*G_DATA_W-1 downto G_DATA_W),Values(0)'length);
       --------------------------------------------------------------------------------
       for i in 1 to C_Taps-1 loop
         MulRes(i) := C_Coefs(i) * unsigned(iv_InSig);
@@ -55,5 +56,5 @@ begin
     end if;
   end if;
 end process;
-ov_OutSig <= std_logic_vector(Values(Values'left));
+ov_OutSig <= std_logic_vector(Values(Values'left)(G_DATA_W-1 downto 0));
 end architecture;
