@@ -8,7 +8,9 @@ context vunit_lib.vunit_context;
 
 
 entity FIR_FILTER_tb is
-generic (runner_cfg : string);
+generic (runner_cfg : string;
+  G_NUM_TESTPOINTS : integer := 1000
+  );
 port (
  tester : in std_logic := '0'
 );
@@ -22,34 +24,40 @@ architecture FIR_FILTER_tb_beh of FIR_FILTER_tb is
   signal   InSig      : std_logic_vector(C_DATA_W-1 downto 0) := (others => '0');
   signal   OutSig     : std_logic_vector(C_DATA_W-1 downto 0) := (others => '0');
   signal rst : std_logic := '0';
+  shared variable TempOutData : integer;
 begin
   clk <= not clk after C_CLK_PER/2;
-  rst <= '1', '0' after 5 ns;
+  rst <= '0';
 --------------------------------------------------------------------------------
   stim_proc : process
     file fptr : text;
-    variable FileLen : line;
-    variable TempData : integer;
+    variable FileLine : line;
+    variable TempInData : integer;
   begin
     wait until is_active(start_stimuli);
     file_open(fptr, "DataVec.txt"); -- file must be located in /vunit_out/modelsim
     while (not endfile(fptr)) loop
-      readline(fptr, FileLen);
-      read(FileLen, TempData);
-      InSig <= std_logic_vector(to_unsigned(TempData,C_DATA_W));
+      readline(fptr, FileLine);
+      read(FileLine, TempInData);
+      read(FileLine, TempOutData);
+      InSig <= std_logic_vector(to_unsigned(TempInData,C_DATA_W));
       wait until rising_edge(clk);
-   end loop;  
+    end loop;  
   end process;
 
   runner_proc : process
   begin
     test_runner_setup(runner,runner_cfg);
     while test_suite loop
-      if run("Test1") then
-        report "Test1 passed";
-      elsif run("Test2") then
+      if run("Test transposed FIR model") then
         notify(start_stimuli);
-        assert false report "Test2 failed";
+        for i in 0 to G_NUM_TESTPOINTS-2 loop
+          wait until falling_edge(clk); -- skip delta cycles
+          print(to_string(i));
+          print(to_string(to_integer(unsigned(InSig))));
+          print(to_string(to_integer(unsigned(OutSig))));
+          check_equal(to_integer(unsigned(OutSig)),TempOutData,"Golden data and DUT data are not equal!");
+        end loop;
       end if;
     end loop;
     test_runner_cleanup(runner);
