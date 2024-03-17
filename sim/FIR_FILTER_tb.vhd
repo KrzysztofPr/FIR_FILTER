@@ -21,56 +21,66 @@ architecture FIR_FILTER_tb_beh of FIR_FILTER_tb is
   constant C_CLK_PER  : time := 20 ns;
   constant C_DATA_W   : natural := 16;
   signal   clk        : std_logic := '0';
+  signal   OutValid   : std_logic := '0';
+  signal   InputValid : std_logic := '0';
   signal   InSig      : std_logic_vector(C_DATA_W-1 downto 0) := (others => '0');
   signal   OutSig     : std_logic_vector(C_DATA_W-1 downto 0) := (others => '0');
   signal rst : std_logic := '0';
+  shared variable TempInData : integer;
   shared variable TempOutData : integer;
+  constant C_ZeroOutVec : std_logic_vector(C_DATA_W-1 downto 0) := (others => '0');
+  
 begin
   clk <= not clk after C_CLK_PER/2;
-  rst <= '0';
 --------------------------------------------------------------------------------
-  stim_proc : process
+  runner_proc : process
     file fptr : text;
     variable FileLine : line;
-    variable TempInData : integer;
-  begin
-    wait until is_active(start_stimuli);
-    file_open(fptr, "DataVec.txt"); -- file must be located in /vunit_out/modelsim
-    while (not endfile(fptr)) loop
-      readline(fptr, FileLine);
-      read(FileLine, TempInData);
-      read(FileLine, TempOutData);
-      InSig <= std_logic_vector(to_unsigned(TempInData,C_DATA_W));
-      wait until rising_edge(clk);
-    end loop;  
-  end process;
-
-  runner_proc : process
   begin
     test_runner_setup(runner,runner_cfg);
     while test_suite loop
-      if run("Test transposed FIR model") then
+      if run("Init_values_test") then
+        wait until rising_edge(clk);
+        check_equal(OutSig,C_ZeroOutVec,"Init output is not equal to 0!");
+        check_equal(OutValid,'0',"Init out valid is not equal to 0!");
+      elsif run("Reset_test") then
+        InputValid <= '1';
+        rst <= '0';
+        InSig <= std_logic_vector((to_unsigned(232,16)));
+        for p in 0 to 100-1 loop
+          wait until rising_edge(clk);
+        end loop;
+        rst <= '1';
+        wait until rising_edge(clk);
+        wait until falling_edge(clk); -- skip delta cycles
+        check_equal(OutSig,C_ZeroOutVec,"Reset state output is not equal to 0!");
+        check_equal(OutValid,'0',"Reset state ouyt valid is not equal to 0!");
+      elsif run("Test_transposed_FIR_model") then
         notify(start_stimuli);
-        for i in 0 to G_NUM_TESTPOINTS-2 loop
-          wait until falling_edge(clk); -- skip delta cycles
-          print(to_string(i));
+        InputValid <= '1';
+        file_open(fptr, "DataVec.txt"); -- file must be located in /vunit_out/modelsim
+        while (not endfile(fptr)) loop
+          readline(fptr, FileLine);
+          read(FileLine, TempInData);
+          read(FileLine, TempOutData);
+          InSig <= std_logic_vector(to_unsigned(TempInData,C_DATA_W));
+          wait until rising_edge(clk);
           print(to_string(to_integer(unsigned(InSig))));
           print(to_string(to_integer(unsigned(OutSig))));
-          check_equal(to_integer(unsigned(OutSig)),TempOutData,"Golden data and DUT data are not equal!");
-        end loop;
-      end if;
+          check_equal(OutSig,std_logic_vector(to_unsigned(TempOutData,16)),"Golden vs reference data error!");
+        end loop;  
     end loop;
-    test_runner_cleanup(runner);
+      test_runner_cleanup(runner);
   end process;
 --------------------------------------------------------------------------------
+-- DUT
 FIR_INST: entity work.FIR_FILTER
   port map(
     i_clk          => clk,
     i_rst          => rst,
     iv_InSig       => InSig,
-    i_InputValid   => '1',
+    i_InputValid   => InputValid,
     ov_OutSig      => OutSig,
-    o_OutputValid  => open
+    o_OutputValid  => OutValid
   );
-  
 end architecture;

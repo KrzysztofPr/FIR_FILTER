@@ -8,12 +8,12 @@ generic (
   G_DATA_W : natural := 16
 );
 port (
-  i_clk        : in std_logic;
-  i_rst        : in std_logic;
-  iv_InSig     : in std_logic_vector(G_DATA_W-1 downto 0);
-  i_InputValid : in std_logic;
-  ov_OutSig    : out std_logic_vector(G_DATA_W-1 downto 0);
-  o_OutputValid: out std_logic
+  i_clk        : in std_logic:= '0';
+  i_rst        : in std_logic:= '0';
+  iv_InSig     : in std_logic_vector(G_DATA_W-1 downto 0) := (others => '0');
+  i_InputValid : in std_logic:= '0';
+  ov_OutSig    : out std_logic_vector(G_DATA_W-1 downto 0) := (others => '0');
+  o_OutputValid: out std_logic := '0'
 );
 end entity;
 
@@ -43,9 +43,10 @@ FIR_FIL_proc: process(i_clk)
 begin
   if rising_edge(i_clk) then
     if (i_rst = '1') then
-      Values <= (others => (others => '0'));
-      MulRes := (others => (others => '0'));
-      u_ValidCnt <= (others => '0');
+      Values        <= (others => (others => '0'));
+      MulRes        := (others => (others => '0'));
+      u_ValidCnt    <= (others => '0');
+      o_OutputValid <= '0';
     else
       if (i_InputValid = '1') then
         MulRes(0) := C_Coefs(0) * unsigned(iv_InSig);
