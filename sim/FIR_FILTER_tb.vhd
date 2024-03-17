@@ -17,9 +17,9 @@ port (
 end entity;
 
 architecture FIR_FILTER_tb_beh of FIR_FILTER_tb is
-  signal start_stimuli : event_t := new_event;
   constant C_CLK_PER  : time := 20 ns;
   constant C_DATA_W   : natural := 16;
+  constant C_NUM_OF_TAPS   : natural := 10;
   signal   clk        : std_logic := '0';
   signal   OutValid   : std_logic := '0';
   signal   InputValid : std_logic := '0';
@@ -55,8 +55,15 @@ begin
         wait until falling_edge(clk); -- skip delta cycles
         check_equal(OutSig,C_ZeroOutVec,"Reset state output is not equal to 0!");
         check_equal(OutValid,'0',"Reset state ouyt valid is not equal to 0!");
+      elsif run("Valid_propagation") then
+        InputValid <= '1';
+        wait until rising_edge(clk);
+        for p in 0 to C_NUM_OF_TAPS loop
+          check_equal(OutValid,'0',"Valid should equal to 0 before full filter propagation");
+          wait until rising_edge(clk);
+        end loop;
+        check_equal(OutValid,'1',"Valid should propagate to this point");
       elsif run("Test_transposed_FIR_model") then
-        notify(start_stimuli);
         InputValid <= '1';
         file_open(fptr, "DataVec.txt"); -- file must be located in /vunit_out/modelsim
         while (not endfile(fptr)) loop
@@ -68,7 +75,8 @@ begin
           print(to_string(to_integer(unsigned(InSig))));
           print(to_string(to_integer(unsigned(OutSig))));
           check_equal(OutSig,std_logic_vector(to_unsigned(TempOutData,16)),"Golden vs reference data error!");
-        end loop;  
+        end loop; 
+      end if; 
     end loop;
       test_runner_cleanup(runner);
   end process;
