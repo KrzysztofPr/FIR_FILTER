@@ -11,5 +11,5 @@ The input vector is then sent as input for vhdl implemented FIR filter and outpu
 In file [FIR_FILTER_tb.vhd](https://github.com/KrzysztofPr/FIR_FILTER/blob/main/sim/FIR_FILTER_tb.vhd) VUnit tests can be found. Implemented test cases:
 - Init_values_test - checks if the filter initialization is done correctly
 - Reset_test - checks reset conditions
-- Valid_propagation - the filter has valid signal which indicates when the filter output is ready to be read, the propagation of the valid signal is automatically checked
+- Valid_propagation - the filter has valid signal which indicates when the filter output is ready to be read, the propagation of the valid signal is checked in this test case
 - Test_transposed_FIR_model - the test case reads the input and output of the python model, then it applies the input vector to the DUT - FIR filter entity and compares the output vectors (model to DUT)
