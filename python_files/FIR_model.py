@@ -2,6 +2,7 @@ import FIR_Creator as FIR
 from scipy import signal as sg
 import random
 import matplotlib.pyplot as plt
+import os
 
 C_TestValuesNum=1000
 
@@ -56,15 +57,15 @@ def CalcFIR_transposed(InputVec,Coefs,Order): #transposed form of fir filter
 
 
 OutVec=CalcFIR_transposed(InputVec,coefs_lsIQ,FIR.C_FirOrder)
-RefVec=sg.lfilter(coefs_ls,[1.0],InputVec) #* reference data
+RefVec=sg.lfilter(coefs_ls,[1.0],InputVec) #* reference data 
 
 
 #save data to .txt for vhdl testbench purposes
-file=open('../sim/DataVec.txt','w')
+file=open('vunit_out/modelsim/DataVec.txt','w')
 for i in range(C_TestValuesNum):
   file.write('{} {}'.format(str(InputVec[i]),str(OutVec[i]))+ '\n')
 
-plt.plot(RefVec)
-plt.plot(OutVec)
+plt.plot(RefVec) # ref data
+plt.plot(OutVec) # custom model
 plt.show()
 
